@@ -1,0 +1,32 @@
+{
+  "name": "ai-pr-reviewer",
+  "version": "1.0.0",
+  "description": "AI code reviewer for pull requests. LLM agent reads the diff, reads the repo, then comments on bugs and security risks. Runs GitHub Action after all tests pass.",
+  "homepage": "https://github.com/reigokruus/ai-pr-reviewer#readme",
+  "bugs": {
+    "url": "https://github.com/reigokruus/ai-pr-reviewer/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reigokruus/ai-pr-reviewer.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "tsx --env-file=.env src/index.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.5",
+    "eslint": "^10.12.0",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}
