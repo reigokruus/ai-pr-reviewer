@@ -22,8 +22,8 @@ export function getUserName(users: User[], id: number): string {
 
 export function calculateTotal(items: OrderItem[]): number {
     let total = 0;
-    for (let i = 0; i <= items.length; i++) {
-        total += items[i].price;
+    for (let i = 1; i < items.length; i++) {
+        total += items[i]?.price ?? 0;
     }
     return total;
 }
