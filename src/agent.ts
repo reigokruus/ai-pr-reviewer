@@ -35,7 +35,7 @@ export interface StepLog {
 
 export type AgentResult =
     | { ok: true; findings: Finding[]; steps: StepLog[] }
-    | { ok: false; error: string; steps: StepLog[] };
+    | { ok: false; error: string; steps: StepLog[]; rawReply?: string };
 
 export interface AgentOptions {
     model: AgentModel;
@@ -79,5 +79,5 @@ function finish(text: string, steps: StepLog[]): AgentResult {
     if (parsed.ok) {
         return { ok: true, findings: parsed.findings, steps };
     }
-    return { ok: false, error: parsed.error, steps };
+    return { ok: false, error: parsed.error, steps, rawReply: text };
 }

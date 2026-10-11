@@ -45,3 +45,17 @@ describe('parseFindings', () => {
         expect(parseFindings(reply).ok).toBe(false);
     });
 });
+
+it('finds the JSON when the model adds text around it', () => {
+    const reply =
+        'I reviewed the changes. Here are my findings:\n' +
+        '[{"file": "a.ts", "line": 2, "severity": "error", "message": "Bug"}]\n' +
+        'Let me know if you need anything else.';
+
+    const result = parseFindings(reply);
+
+    expect(result).toEqual({
+        ok: true,
+        findings: [{ file: 'a.ts', line: 2, severity: 'error', message: 'Bug' }],
+    });
+});

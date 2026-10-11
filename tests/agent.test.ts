@@ -93,5 +93,8 @@ describe('runAgent', () => {
         const result = await runAgent({ model, system: '', userMessage: 'diff', repoRoot: root });
 
         expect(result.ok).toBe(false);
+        if (!result.ok) {
+            expect(result.rawReply).toBe('Looks good to me!');
+        }
     });
 });

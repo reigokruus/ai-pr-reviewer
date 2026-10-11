@@ -1,6 +1,6 @@
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { runAgent } from './agent.js';
-import { getDiff, getDiffOptions } from './diff.js';
+import { diffTooLargeMessage, getDiff, getDiffOptions } from './diff.js';
 import { formatReview, formatSteps } from './format.js';
 import { createAnthropicAgentModel, getApiKey } from './llm.js';
 import { SYSTEM_PROMPT, buildUserMessage } from './prompt.js';
@@ -14,13 +14,20 @@ function writeSummary(text: string): void {
     }
 }
 
+function publish(review: string): void {
+    console.log(review);
+    writeFileSync(REVIEW_FILE, review);
+    writeSummary(review);
+}
+
 const options = getDiffOptions();
 const diff = getDiff(options);
+const tooLarge = diffTooLargeMessage(diff);
 
 if (diff.trim() === '') {
-    const message = '## AI code review\n\nNo changes to review.';
-    console.log(message);
-    writeFileSync(REVIEW_FILE, message);
+    publish('## AI code review\n\nNo changes to review.');
+} else if (tooLarge !== null) {
+    publish(tooLarge);
 } else {
     const modelName = process.env.LLM_MODEL ?? 'claude-haiku-5-5';
     const model = createAnthropicAgentModel(getApiKey(), modelName);
@@ -37,12 +44,13 @@ if (diff.trim() === '') {
     writeSummary(stepsText);
 
     if (result.ok) {
-        const review = formatReview(result.findings);
-        console.log(review);
-        writeFileSync(REVIEW_FILE, review);
-        writeSummary(review);
+        publish(formatReview(result.findings));
     } else {
         console.error(result.error);
+        if (result.rawReply !== undefined) {
+            console.error('Raw model reply:');
+            console.error(result.rawReply);
+        }
         writeSummary(`**Review failed:** ${result.error}`);
         process.exitCode = 1;
     }

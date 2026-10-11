@@ -75,7 +75,7 @@ export function createAnthropicAgentModel(apiKey: string, model: string): AgentM
         async next(system, history, allowTools) {
             const response = await anthropic.messages.create({
                 model,
-                max_tokens: 2000,
+                max_tokens: 4000,
                 system,
                 tools: TOOL_DEFINITIONS,
                 tool_choice: allowTools ? { type: 'auto' } : { type: 'none' },
