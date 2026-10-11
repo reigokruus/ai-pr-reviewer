@@ -1,5 +1,6 @@
 import type { Finding, Severity } from './types.js';
 import type { StepLog } from './agent.js';
+
 const SEVERITY_ORDER: Severity[] = ['error', 'warning', 'suggestion'];
 
 const HEADINGS: Record<Severity, string> = {
