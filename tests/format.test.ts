@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { formatReview } from '../src/format.js';
+import { formatReview, formatSteps } from '../src/format.js';
 import type { Finding } from '../src/types.js';
+
 
 describe('formatReview', () => {
     it('says no issues were found when the list is empty', () => {
@@ -53,5 +54,21 @@ describe('formatReview', () => {
 
         expect(result).not.toContain('### Warnings');
         expect(result).not.toContain('### Suggestions');
+    });
+
+    describe('formatSteps', () => {
+        it('says so when no tools were used', () => {
+            expect(formatSteps([])).toContain('without using any tools');
+        });
+
+        it('shows one table row per tool call', () => {
+            const result = formatSteps([
+                { step: 1, tool: 'read_file', input: { path: 'src/a.ts' }, outputLength: 120 },
+                { step: 2, tool: 'search_code', input: { query: 'getUser' }, outputLength: 45 },
+            ]);
+
+            expect(result).toContain('| 1 | `read_file` | `{"path":"src/a.ts"}` | 120 |');
+            expect(result).toContain('| 2 | `search_code` | `{"query":"getUser"}` | 45 |');
+        });
     });
 });

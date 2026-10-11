@@ -1,12 +1,57 @@
-import { formatReview } from './format.js';
-import type { Finding } from './types.js';
+import { appendFileSync, writeFileSync } from 'node:fs';
+import { runAgent } from './agent.js';
+import { diffTooLargeMessage, getDiff, getDiffOptions } from './diff.js';
+import { formatReview, formatSteps } from './format.js';
+import { createAnthropicAgentModel, getApiKey } from './llm.js';
+import { SYSTEM_PROMPT, buildUserMessage } from './prompt.js';
 
-const findings: Finding[] = [
-    { file: 'src/login.ts', line: 42, severity: 'error', message: 'Password is hardcoded.' },
-    { file: 'src/api.ts', severity: 'error', message: 'Missing error handling.' },
-    { file: 'src/utils.ts', line: 7, severity: 'warning', message: 'Loop may skip the last element.' },
-];
+const REVIEW_FILE = 'review.md';
 
-console.log(formatReview(findings));
-console.log('---');
-console.log(formatReview([]));
+function writeSummary(text: string): void {
+    const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+    if (summaryPath) {
+        appendFileSync(summaryPath, `${text}\n\n`);
+    }
+}
+
+function publish(review: string): void {
+    console.log(review);
+    writeFileSync(REVIEW_FILE, review);
+    writeSummary(review);
+}
+
+const options = getDiffOptions();
+const diff = getDiff(options);
+const tooLarge = diffTooLargeMessage(diff);
+
+if (diff.trim() === '') {
+    publish('## AI code review\n\nNo changes to review.');
+} else if (tooLarge !== null) {
+    publish(tooLarge);
+} else {
+    const modelName = process.env.LLM_MODEL ?? 'claude-haiku-5-5';
+    const model = createAnthropicAgentModel(getApiKey(), modelName);
+
+    const result = await runAgent({
+        model,
+        system: SYSTEM_PROMPT,
+        userMessage: buildUserMessage(diff),
+        repoRoot: process.env.REPO_ROOT ?? process.cwd(),
+    });
+
+    const stepsText = formatSteps(result.steps);
+    console.log(stepsText);
+    writeSummary(stepsText);
+
+    if (result.ok) {
+        publish(formatReview(result.findings));
+    } else {
+        console.error(result.error);
+        if (result.rawReply !== undefined) {
+            console.error('Raw model reply:');
+            console.error(result.rawReply);
+        }
+        writeSummary(`**Review failed:** ${result.error}`);
+        process.exitCode = 1;
+    }
+}
