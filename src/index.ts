@@ -47,6 +47,10 @@ if (diff.trim() === '') {
         publish(formatReview(result.findings));
     } else {
         console.error(result.error);
+        if (result.rawReply !== undefined) {
+            console.error('Raw model reply:');
+            console.error(result.rawReply);
+        }
         writeSummary(`**Review failed:** ${result.error}`);
         process.exitCode = 1;
     }

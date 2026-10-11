@@ -4,16 +4,19 @@ export type ParseResult =
     | { ok: true; findings: Finding[] }
     | { ok: false; error: string };
 
-function stripCodeFence(text: string): string {
-    const trimmed = text.trim();
-    const match = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-    return match?.[1] ?? trimmed;
+function extractJsonArray(text: string): string {
+    const start = text.indexOf('[');
+    const end = text.lastIndexOf(']');
+    if (start === -1 || end < start) {
+        return text.trim();
+    }
+    return text.slice(start, end + 1);
 }
 
 export function parseFindings(text: string): ParseResult {
     let data: unknown;
     try {
-        data = JSON.parse(stripCodeFence(text));
+        data = JSON.parse(extractJsonArray(text));
     } catch {
         return { ok: false, error: 'The model reply was not valid JSON.' };
     }
