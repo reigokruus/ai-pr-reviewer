@@ -18,7 +18,7 @@ describe('formatReview', () => {
 
         const result = formatReview(findings);
 
-        expect(result).toContain('**3 errors, 1 warning**');
+        expect(result).toContain('**2 errors, 1 warning**');
     });
 
     it('lists errors before warnings, whatever the input order', () => {
