@@ -1,12 +1,26 @@
+import { getDiff, getDiffOptions } from './diff.js';
 import { formatReview } from './format.js';
-import type { Finding } from './types.js';
+import { createAnthropicClient, getApiKey } from './llm.js';
+import { parseFindings } from './parse.js';
+import { SYSTEM_PROMPT, buildUserMessage } from './prompt.js';
 
-const findings: Finding[] = [
-    { file: 'src/login.ts', line: 42, severity: 'error', message: 'Password is hardcoded.' },
-    { file: 'src/api.ts', severity: 'error', message: 'Missing error handling.' },
-    { file: 'src/utils.ts', line: 7, severity: 'warning', message: 'Loop may skip the last element.' },
-];
+const options = getDiffOptions();
+const diff = getDiff(options);
 
-console.log(formatReview(findings));
-console.log('---');
-console.log(formatReview([]));
+if (diff.trim() === '') {
+    console.log('No changes to review.');
+} else {
+    const model = process.env.LLM_MODEL ?? 'claude-haiku-5-5';
+    const client = createAnthropicClient(getApiKey(), model);
+
+    const reply = await client.complete(SYSTEM_PROMPT, buildUserMessage(diff));
+    const parsed = parseFindings(reply);
+
+    if (parsed.ok) {
+        console.log(formatReview(parsed.findings));
+    } else {
+        console.error(parsed.error);
+        console.error('Raw reply:', reply);
+        process.exitCode = 1;
+    }
+}
