@@ -1,4 +1,5 @@
 import type { Finding, Severity } from './types.js';
+import type { StepLog } from './agent.js';
 
 const SEVERITY_ORDER: Severity[] = ['error', 'warning', 'suggestion'];
 
@@ -50,4 +51,22 @@ export function formatReview(findings: Finding[]): string {
     }
 
     return lines.join('\n');
+}
+
+export function formatSteps(steps: StepLog[]): string {
+    if (steps.length === 0) {
+        return '### Agent steps\n\nThe agent answered without using any tools.';
+    }
+
+    const rows = steps.map(
+        (s) => `| ${s.step} | \`${s.tool}\` | \`${JSON.stringify(s.input)}\` | ${s.outputLength} |`,
+    );
+
+    return [
+        '### Agent steps',
+        '',
+        '| Step | Tool | Input | Output (chars) |',
+        '| --- | --- | --- | --- |',
+        ...rows,
+    ].join('\n');
 }

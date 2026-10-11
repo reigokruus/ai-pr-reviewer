@@ -1,26 +1,49 @@
+import { appendFileSync, writeFileSync } from 'node:fs';
+import { runAgent } from './agent.js';
 import { getDiff, getDiffOptions } from './diff.js';
-import { formatReview } from './format.js';
-import { createAnthropicClient, getApiKey } from './llm.js';
-import { parseFindings } from './parse.js';
+import { formatReview, formatSteps } from './format.js';
+import { createAnthropicAgentModel, getApiKey } from './llm.js';
 import { SYSTEM_PROMPT, buildUserMessage } from './prompt.js';
+
+const REVIEW_FILE = 'review.md';
+
+function writeSummary(text: string): void {
+    const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+    if (summaryPath) {
+        appendFileSync(summaryPath, `${text}\n\n`);
+    }
+}
 
 const options = getDiffOptions();
 const diff = getDiff(options);
 
 if (diff.trim() === '') {
-    console.log('No changes to review.');
+    const message = '## AI code review\n\nNo changes to review.';
+    console.log(message);
+    writeFileSync(REVIEW_FILE, message);
 } else {
-    const model = process.env.LLM_MODEL ?? 'claude-haiku-5-5';
-    const client = createAnthropicClient(getApiKey(), model);
+    const modelName = process.env.LLM_MODEL ?? 'claude-haiku-5-5';
+    const model = createAnthropicAgentModel(getApiKey(), modelName);
 
-    const reply = await client.complete(SYSTEM_PROMPT, buildUserMessage(diff));
-    const parsed = parseFindings(reply);
+    const result = await runAgent({
+        model,
+        system: SYSTEM_PROMPT,
+        userMessage: buildUserMessage(diff),
+        repoRoot: process.env.REPO_ROOT ?? process.cwd(),
+    });
 
-    if (parsed.ok) {
-        console.log(formatReview(parsed.findings));
+    const stepsText = formatSteps(result.steps);
+    console.log(stepsText);
+    writeSummary(stepsText);
+
+    if (result.ok) {
+        const review = formatReview(result.findings);
+        console.log(review);
+        writeFileSync(REVIEW_FILE, review);
+        writeSummary(review);
     } else {
-        console.error(parsed.error);
-        console.error('Raw reply:', reply);
+        console.error(result.error);
+        writeSummary(`**Review failed:** ${result.error}`);
         process.exitCode = 1;
     }
 }
