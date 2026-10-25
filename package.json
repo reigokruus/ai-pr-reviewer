@@ -30,7 +30,7 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.133.0",
+    "@anthropic-ai/sdk": "^1.1.0",
     "zod": "^4.6.5"
   }
 }
